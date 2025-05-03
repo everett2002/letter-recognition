@@ -40,9 +40,8 @@ transform = transforms.Compose([
     transforms.Normalize((0.5,), (0.5,))
 ])
 
-image_path = 'test_a_4.png'  # change this to your file path
+image_path = './dataset_root/test/J/J_34.png'  # change this to your file path
 img = Image.open(image_path).convert('L')  # Convert to grayscale
-img = ImageOps.invert(img)  # flip white ↔ black
 
 plt.imshow(img, cmap='gray')
 plt.title("Model Input")
