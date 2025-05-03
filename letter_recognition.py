@@ -1,4 +1,5 @@
 from torchvision import datasets, transforms
+from torchvision.datasets import ImageFolder
 from torch.utils.data import Dataset, DataLoader, Subset
 
 import torch.nn as nn
@@ -7,40 +8,19 @@ import torch.nn.functional as F
 import torch
 
 transform = transforms.Compose([
+    transforms.Grayscale(),  # ensure single channel
     transforms.Resize((32, 32)),
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,))
 ])
 
-train_data = datasets.EMNIST(root='./data', split='byclass', train=True, download=True, transform=transform)
-test_data = datasets.EMNIST(root='./data', split='byclass', train=False, download=True, transform=transform)
+# Replace EMNIST dataset loading with ImageFolder
+train_data = ImageFolder(root='./dataset_root/train', transform=transform)
+test_data = ImageFolder(root='./dataset_root/test', transform=transform)
 
-def filter_uppercase(dataset):
-    uppercase_indices = [i for i, (_, label) in enumerate(dataset) if 38 <= label <= 63]
-    return Subset(dataset, uppercase_indices)
-
-# 4. Apply filter to both train and test
-train_subset = filter_uppercase(train_data)
-test_subset = filter_uppercase(test_data)
-
-# Remap labels from 38–63 → 0–25
-class UppercaseOnlyDataset(Dataset):
-    def __init__(self, subset):
-        self.subset = subset
-
-    def __getitem__(self, idx):
-        img, label = self.subset[idx]
-        return img, label - 38  # Map A=0, B=1, ..., Z=25
-
-    def __len__(self):
-        return len(self.subset)
-
-train_data = UppercaseOnlyDataset(train_subset)
-test_data = UppercaseOnlyDataset(test_subset)
-
-# dataloaders
 train_loader = DataLoader(train_data, batch_size=64, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=64, shuffle=False)
+
 
 # basic CNN
 class LetterClassifier(nn.Module):
@@ -103,24 +83,4 @@ print(f"Test Accuracy: {100 * correct / total:.2f}%")
 torch.save(model.state_dict(), 'letter_classifier.pth')
 print("Model saved to letter_classifier.pth")
 
-# visualize results
-# import matplotlib.pyplot as plt
-
-# classes = [chr(i) for i in range(ord('A'), ord('Z')+1)]
-# images, labels = next(iter(test_loader))
-# images = images[:6]
-# labels = labels[:6]
-
-# model.eval()
-# with torch.no_grad():
-#     outputs = model(images.to(device))
-#     _, preds = torch.max(outputs, 1)
-
-# fig, axes = plt.subplots(1, 6, figsize=(12, 2))
-# for i in range(6):
-#     img = images[i].squeeze().numpy()
-#     axes[i].imshow(img, cmap='gray')
-#     axes[i].set_title(f"Pred: {classes[preds[i]]}\nTrue: {classes[labels[i]-1]}")
-#     axes[i].axis('off')
-# plt.show()
 
